@@ -1,14 +1,28 @@
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { LogoFiladelfia } from "../assets/SVG/LogoFila";
 import { Modal } from "./components/Modal/Modal";
-import Lottie from "lottie-react";
+import { Form } from "./components/Form/Form";
 
 export const App = () => {
   const { width, height } = useWindowSize();
+  const [viewForm, setViewForm] = useState(false);
 
+  const handleContinue = () => {
+    setViewForm(true);
+  };
+
+  const handleBack = () => {
+    setViewForm(false);
+  };
+
+  // Si viewForm es true, muestra el formulario
+  if (viewForm) {
+    return <Form onBack={handleBack} />;
+  }
+
+  // Si viewForm es false, muestra la página de bienvenida
   return (
     <div className="flex justify-center flex-col items-center bg-blue-100 w-screen h-screen">
       <Confetti
@@ -28,7 +42,7 @@ export const App = () => {
           Inscríbete hoy, conecta con tu fe y haz nuevos amigos.
         </p>
       </div>
-      <Modal />
+      <Modal onContinue={handleContinue} />
     </div>
   );
 };
