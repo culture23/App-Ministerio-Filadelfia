@@ -4,30 +4,21 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
-export const Input = ({ label, className = "", ...props }: InputProps) => {
+export const Input: React.FC<InputProps> = ({ label, className = "", id, ...props }) => {
+  const autoId = React.useId();
+  const inputId = id ?? (label ? `input-${autoId}` : undefined);
+
   return (
-    <div className="w-full">
+    <div>
       {label && (
-        <label className="block text-sm font-medium mb-2" style={{ color: '#374151' }}>
+        <label htmlFor={inputId} className="block text-sm font-medium mb-2 text-gray-700">
           {label}
         </label>
       )}
       <input
-        className={`border rounded-2xl w-full h-[35px] px-4 outline-none transition ${className}`}
-        style={{
-          borderColor: '#d1d5db',
-          backgroundColor: '#ffffff',
-          color: '#1f2937'
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = '#3b82f6';
-          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = '#d1d5db';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        id={inputId}
         {...props}
+        className={`w-full border border-gray-300 rounded-2xl h-10 px-4 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 ${className}`}
       />
     </div>
   );

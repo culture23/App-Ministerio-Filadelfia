@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/Input/Input";
 import { DatePicker } from "@/components/DatePicker/DatePicker";
-import { ConfirmationDialog } from "@/components/ConfirmationDialog/ConfirmationDialog";
+import { createPersona } from "@/services/Api";
 import { SuccessDialog } from "@/components/SuccessDialog/SuccessDialog";
 
 interface FormProps {
@@ -14,48 +14,124 @@ export const Form = ({ onBack }: FormProps) => {
     nombre: "",
     apellido: "",
     cedula: "",
-    edad: "",
     telefono: "",
     correo: "",
     fechaNacimiento: undefined as Date | undefined,
+    // Persona additional optional fields
+    bautizado: false,
+    genero: "",
+    ministerio: "",
+    nivel_academico: "",
+    ocupacion: "",
   });
-  const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successName, setSuccessName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // --- Phone and Cedula helpers (store digits; format for display) ---
+  const formatPhoneDisplay = (digits: string) => {
+    if (!digits) return "";
+    const cleanDigits = digits.replace(/\D/g, "");
+    if (cleanDigits.length <= 3) return cleanDigits;
+    if (cleanDigits.length <= 6) return `${cleanDigits.slice(0, 3)}-${cleanDigits.slice(3)}`;
+    if (cleanDigits.length <= 8) return `${cleanDigits.slice(0, 3)}-${cleanDigits.slice(3, 6)}-${cleanDigits.slice(6)}`;
+    return `${cleanDigits.slice(0, 3)}-${cleanDigits.slice(3, 6)}-${cleanDigits.slice(6, 8)}-${cleanDigits.slice(8, 10)}`;
+  };
+
+  const onPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e?.target?.value || "";
+    // Remove non-digits, strip leading zeros, limit to 10 digits
+    const digits = value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 10);
+    setFormData({ ...formData, telefono: digits });
+  };
+
+  const formatCedulaDisplay = (digits: string) => {
+    const p = (digits || "").replace(/\D/g, "").slice(0, 8).padStart(8, '0');
+    return `${p.slice(0, 2)}.${p.slice(2, 5)}.${p.slice(5)}`;
+  };
+
+  const onCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e?.target?.value || "";
+    // Keep the rightmost 8 digits so the input visually fills from the right
+    const digits = value.replace(/\D/g, '').slice(-8);
+    setFormData({ ...formData, cedula: digits });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Datos del formulario:", formData);
-    // Mostrar el diálogo de confirmación
-    setShowConfirmation(true);
+
+    // Validar sólo los campos obligatorios: nombre, apellido, fecha de nacimiento
+    if (!formData.nombre || !formData.apellido || !formData.fechaNacimiento) {
+      alert("Por favor completa Nombre, Apellido y Fecha de Nacimiento.");
+      return;
+    }
+
+    // Preparar payload en snake_case para el backend
+    const payload = {
+      cedula: formData.cedula || undefined,
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      email: formData.correo || undefined,
+      telefono: formData.telefono || undefined,
+      fecha_nacimiento: formData.fechaNacimiento
+        ? formData.fechaNacimiento.toISOString().slice(0, 10)
+        : undefined,
+      ministerio: formData.ministerio || undefined,
+      nivel_academico: formData.nivel_academico || undefined,
+      ocupacion: formData.ocupacion || undefined,
+  // send bautizado explicitly (backend may require boolean)
+  bautizado: formData.bautizado,
+      genero: formData.genero || undefined,
+    };
+
+    try {
+  setIsSubmitting(true);
+      const created: unknown = await createPersona(payload);
+      // extract name from response if present (type-safe)
+      let nameToShow = formData.nombre || "";
+      if (created && typeof created === "object") {
+        const c = created as Record<string, unknown>;
+        if (typeof c["nombre"] === "string") nameToShow = c["nombre"] as string;
+        else if (typeof c["nombre_completo"] === "string") nameToShow = c["nombre_completo"] as string;
+      }
+      setSuccessName(nameToShow);
+      // Build a user-facing success message. Only promise follow-up messages if we have contact info.
+      const base = "¡Gracias por registrarte en el Grupo de Jóvenes con Propósito!";
+      const contactProvided = Boolean(formData.correo || formData.telefono);
+      const followup = contactProvided
+        ? " Pronto recibirás información sobre las actividades de los Jóvenes."
+        : "";
+      setSuccessMessage(`${base}${followup}`);
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      console.error("Error creando persona:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      alert(message || "Error al crear la persona. Intenta de nuevo.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleConfirm = () => {
-    // Cerrar el diálogo de confirmación
-    setShowConfirmation(false);
-    
-    // Aquí puedes enviar los datos a tu backend
-    console.log("Enviando datos al backend:", formData);
-    
-    // Mostrar el diálogo de éxito
-    setShowSuccess(true);
-  };
-
-  const handleCloseConfirmation = () => {
-    setShowConfirmation(false);
-  };
+  // note: Confirmation dialog removed — submit sends directly to API
 
   const handleCloseSuccess = () => {
     setShowSuccess(false);
+    setSuccessName("");
     
     // Limpiar el formulario
     setFormData({
       nombre: "",
       apellido: "",
       cedula: "",
-      edad: "",
       telefono: "",
       correo: "",
       fechaNacimiento: undefined,
+      bautizado: false,
+      genero: "",
+      ministerio: "",
+      nivel_academico: "",
+      ocupacion: "",
     });
     
     // Volver a la página principal
@@ -102,19 +178,17 @@ export const Form = ({ onBack }: FormProps) => {
           <Input
             label="Cédula de Identidad"
             type="text"
-            value={formData.cedula}
-            onChange={(e) =>
-              setFormData({ ...formData, cedula: e.target.value })
-            }
+            value={formatCedulaDisplay(formData.cedula)}
+            onChange={onCedulaChange}
             placeholder="V-12345678"
-            required
+            // opcional
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: '#374151' }}>
-                Fecha de Nacimiento
+                Fecha de Nacimiento <span className="text-red-500">*</span>
               </label>
               <DatePicker
                 selected={formData.fechaNacimiento}
@@ -123,17 +197,46 @@ export const Form = ({ onBack }: FormProps) => {
                 }
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#374151' }}>
+                Género
+              </label>
+              <div className="flex items-center gap-6 mt-1">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="genero"
+                    value="M"
+                    checked={formData.genero === "M"}
+                    onChange={(e) => setFormData({ ...formData, genero: e.target.value })}
+                    className="h-4 w-4 accent-blue-600 border-gray-300"
+                  />
+                  <span className="ml-2">Hombre</span>
+                </label>
+
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="genero"
+                    value="F"
+                    checked={formData.genero === "F"}
+                    onChange={(e) => setFormData({ ...formData, genero: e.target.value })}
+                    className="h-4 w-4 accent-blue-600 border-gray-300"
+                  />
+                  <span className="ml-2">Mujer</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <Input
             label="Teléfono"
             type="tel"
-            value={formData.telefono}
-            onChange={(e) =>
-              setFormData({ ...formData, telefono: e.target.value })
-            }
-            placeholder="+58 414 123 4567"
-            required
+            value={formatPhoneDisplay(formData.telefono)}
+            onChange={onPhoneChange}
+            inputMode="numeric"
+            placeholder="414-123-4567"
+            // opcional
           />
 
           <Input
@@ -144,8 +247,51 @@ export const Form = ({ onBack }: FormProps) => {
               setFormData({ ...formData, correo: e.target.value })
             }
             placeholder="tu@correo.com"
-            required
+            // opcional
           />
+
+          {/* Bautizado moved to the end of the form */}
+          <Input
+            label="Ministerio"
+            type="text"
+            value={formData.ministerio}
+            onChange={(e) => setFormData({ ...formData, ministerio: e.target.value })}
+            placeholder="Ministerio al que pertenece"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Nivel Académico"
+              type="text"
+              value={formData.nivel_academico}
+              onChange={(e) => setFormData({ ...formData, nivel_academico: e.target.value })}
+              placeholder="Ej. Bachiller, TSU, Universitario"
+            />
+
+            <Input
+              label="Ocupación"
+              type="text"
+              value={formData.ocupacion}
+              onChange={(e) => setFormData({ ...formData, ocupacion: e.target.value })}
+              placeholder="Profesión u ocupación"
+            />
+          </div>
+
+          <div className="pt-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: '#374151' }}>
+              Bautizado
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="bautizado"
+                type="checkbox"
+                checked={formData.bautizado}
+                onChange={(e) => setFormData({ ...formData, bautizado: e.target.checked })}
+                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              />
+              <label htmlFor="bautizado" className="text-sm text-gray-700">Sí</label>
+            </div>
+          </div>
 
           <div className="flex gap-4 pt-4">
             <Button
@@ -159,28 +305,20 @@ export const Form = ({ onBack }: FormProps) => {
             </Button>
             <Button
               type="submit"
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
               style={{ backgroundColor: '#2768F5', color: '#ffffff' }}
-           
             >
-              Enviar Inscripción
+              {isSubmitting ? "Enviando..." : "Enviar Inscripción"}
             </Button>
           </div>
         </form>
       </div>
-
-      <ConfirmationDialog
-        isOpen={showConfirmation}
-        onClose={handleCloseConfirmation}
-        onConfirm={handleConfirm}
-        title="¿Confirmar envío?"
-        message="¿Estás seguro de que deseas enviar el formulario con esta información?"
-      />
-
       <SuccessDialog
         isOpen={showSuccess}
         onClose={handleCloseSuccess}
-        title="¡Inscripción Exitosa!"
-        message="Tu formulario ha sido enviado correctamente. Pronto recibirás información sobre las actividades de la juventud. ¡Bienvenido a la familia!"
+        nombre={successName}
+        message={successMessage}
       />
     </div>
   );

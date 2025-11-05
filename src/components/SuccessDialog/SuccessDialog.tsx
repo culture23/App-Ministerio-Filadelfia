@@ -7,6 +7,7 @@ interface SuccessDialogProps {
   onClose: () => void;
   title?: string;
   message?: string;
+  nombre?: string;
 }
 
 export const SuccessDialog = ({
@@ -14,6 +15,7 @@ export const SuccessDialog = ({
   onClose,
   title = "¡Inscripción Exitosa!",
   message = "Tu formulario ha sido enviado correctamente. Pronto recibirás información sobre las actividades de la juventud. ¡Bienvenido a la familia!",
+  nombre,
 }: SuccessDialogProps) => {
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
@@ -80,7 +82,7 @@ export const SuccessDialog = ({
                   marginBottom: "12px",
                 }}
               >
-                {title}
+                {nombre ? `Gracias ${nombre}, por registrarte` : title}
               </Dialog.Title>
               <Dialog.Description
                 style={{

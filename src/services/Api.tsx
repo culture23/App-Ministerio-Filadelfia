@@ -37,12 +37,20 @@ export interface GetPersonasParams {
 }
 
 export interface CreatePersonaPayload {
-  cedula: string;
-  nombreCompleto: string;
+  // Payload keys use snake_case to match backend expectations
+  cedula?: string | number;
+  nombre?: string;
+  apellido?: string;
+  nombre_completo?: string;
   email?: string;
   telefono?: string;
-  fechaNacimiento?: string;
+  fecha_nacimiento?: string;
   direccion?: string;
+  ministerio?: string;
+  nivel_academico?: string;
+  ocupacion?: string;
+  bautizado?: boolean;
+  genero?: string;
 }
 
 export interface CreateActividadPayload {
