@@ -18,6 +18,10 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ selected, onSelect, placeholder = "Selecciona una fecha" }: DatePickerProps) {
+  const currentYear = new Date().getFullYear();
+  const fromYear = 1990;
+  const toYear = currentYear;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -38,14 +42,25 @@ export function DatePicker({ selected, onSelect, placeholder = "Selecciona una f
         className="w-auto p-0" 
         style={{ 
           backgroundColor: '#ffffff',
-          border: '1px solid #e5e7eb'
+          border: '1px solid #e5e7eb',
+          fontSize: '0.875rem'
         }}
       >
         <Calendar 
           mode="single" 
           selected={selected} 
           onSelect={onSelect}
-          className="rounded-md"
+          className="rounded-md text-sm scale-90"
+          captionLayout="dropdown-buttons"
+          fromYear={fromYear}
+          toYear={toYear}
+          locale={es}
+          defaultMonth={selected || new Date(1990, 0)}
+          formatters={{
+            formatMonthDropdown: (date) =>
+              date.toLocaleString("es-ES", { month: "long" }),
+            formatYearDropdown: (date) => date.getFullYear().toString(),
+          }}
         />
       </PopoverContent>
     </Popover>

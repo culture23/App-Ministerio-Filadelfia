@@ -1,35 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { LogoFiladelfia } from "./assets/SVG/LogoFila";
 import { Modal } from "./components/Modal/Modal";
 import { Form } from "./components/Form/Form";
-import { Asistence } from "./Asistence";
+import { AsistenceModal } from "./components/Modal/AsistenceModal";
+import Admin from "./Pages/Admin";
 
-export const App = () => {
+export default function App() {
   const { width, height } = useWindowSize();
-  const [currentView, setCurrentView] = useState<'home' | 'form' | 'asistence'>('home');
+  const [route, setRoute] = useState(window.location.hash || '#/');
+  const [currentView, setCurrentView] = useState<'home' | 'form'>('home');
+  
+  // Secret admin route: type or share this hash to access admin
+  const SECRET_ADMIN_HASH = '#/__sigma-astral-portal__b2f9a7-91a4';
+
+  useEffect(() => {
+    const onHashChange = () => setRoute(window.location.hash || '#/');
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const isAdmin = route.startsWith(SECRET_ADMIN_HASH);
+
+  // Verificar si hoy es domingo (0 = domingo, 6 = sábado)
+  const isSunday = new Date().getDay() === 0;
 
   const handleContinue = () => {
     setCurrentView('form');
-  };
-
-  const handleAsistence = () => {
-    setCurrentView('asistence');
   };
 
   const handleBack = () => {
     setCurrentView('home');
   };
 
+  // Si es la ruta de administración, muestra el Admin
+  if (isAdmin) {
+    return (
+      <main style={{
+        minHeight: '100vh',
+        backgroundColor: '#f3f4f6',
+        padding: '24px 16px'
+      }}>
+        <Admin />
+      </main>
+    );
+  }
+
   // Si currentView es 'form', muestra el formulario
   if (currentView === 'form') {
     return <Form onBack={handleBack} />;
-  }
-
-  // Si currentView es 'asistence', muestra la página de asistencia
-  if (currentView === 'asistence') {
-    return <Asistence onBack={handleBack} />;
   }
 
   // Si viewForm es false, muestra la página de bienvenida
@@ -54,16 +74,7 @@ export const App = () => {
         </p>
       </div>
       <Modal onContinue={handleContinue} />
-    <button 
-        onClick={handleAsistence}
-        className="mt-4 px-7 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-        style={{ backgroundColor: '#2768F5', color: '#ffffff' }}
-      >
-        Registrar Asistencia
-      </button>
-
+      {isSunday && <AsistenceModal />}
     </div>
   );
-};
-
-export default App;
+}
