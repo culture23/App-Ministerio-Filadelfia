@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import ClaseForm from '@/components/ClassForm/ClassForm'
 import ClasesList from '@/components/ClassList/ClassList'
-import { Form } from '@/components/Form/Form'
 import { Button } from '@/components/ui/button'
 import { Users, GraduationCap, Home } from 'lucide-react'
+import PersonaList from '@/components/PersonaList/PersonaList'
 
 export default function Admin() {
   const SECRET_ADMIN_HASH = '#/__sigma-astral-portal__b2f9a7-91a4'
@@ -137,7 +137,7 @@ export default function Admin() {
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
           border: '1px solid #e5e7eb'
         }}>
-          <Form onBack={() => window.location.hash = '#/'} />
+          <PersonaList />
         </section>
       )}
 
