@@ -9,17 +9,50 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/Input/Input";
 import { SuccessDialog } from "@/components/SuccessDialog/SuccessDialog";
+import { getPersonas, asistirActividad } from "@/services/Api";
 
-export const AsistenceModal = () => {
+interface AsistenceModalProps {
+  actividadId: string;
+}
+
+export const AsistenceModal = ({ actividadId }: AsistenceModalProps) => {
   const [cedula, setCedula] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cedula.trim()) {
-      console.log("Asistencia registrada para cédula:", cedula);
+    if (!cedula.trim()) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Buscar persona por cédula
+      const response = await getPersonas({ cedula: cedula.trim() });
+      
+      if (response.data.length === 0) {
+        setError("No se encontró ninguna persona con esta cédula");
+        setLoading(false);
+        return;
+      }
+
+      const persona = response.data[0];
+
+      // Registrar asistencia
+      await asistirActividad(actividadId, persona._id);
+      
       setShowSuccess(true);
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+      if (err instanceof Error) {
+        setError(err.message || "Error al registrar la asistencia");
+      } else {
+        setError("Error al registrar la asistencia");
+      }
     }
   };
 
@@ -51,12 +84,28 @@ export const AsistenceModal = () => {
           <form onSubmit={handleSubmit} className="space-y-6 mt-4">
             <Input
               label="Cédula de Identidad"
-              type="text"
+              type="tel"
               value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              placeholder="V-12345678"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                if (value.length <= 8) {
+                  setCedula(value);
+                }
+                if (error) setError(null);
+              }}
+              placeholder="12345678"
               required
+              disabled={loading}
             />
+
+            {error && (
+              <div 
+                className="p-3 rounded-md text-sm font-medium"
+                style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}
+              >
+                {error}
+              </div>
+            )}
 
             <div className="flex gap-4 justify-end">
               <Button
@@ -68,6 +117,7 @@ export const AsistenceModal = () => {
                   backgroundColor: 'transparent',
                   border: '1px solid #e5e7eb'
                 }}
+                disabled={loading}
               >
                 Cancelar
               </Button>
@@ -75,8 +125,9 @@ export const AsistenceModal = () => {
                 type="submit"
                 className="hover:bg-blue-600 hover:text-white"
                 style={{ backgroundColor: '#2768F5', color: '#ffffff' }}
+                disabled={loading}
               >
-                Registrar
+                {loading ? "Registrando..." : "Registrar"}
               </Button>
             </div>
           </form>
