@@ -8,9 +8,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light;
+  color: #213547;
+  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -91,17 +91,29 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Forzar modo claro siempre */
+html {
+  color-scheme: light !important;
+}
+
+html.dark,
+html.dark *,
+.dark,
+.dark * {
+  color-scheme: light !important;
+}
+
+body {
+  color: #213547 !important;
+  background-color: #ffffff !important;
+}
+
+a:hover {
+  color: #747bff;
+}
+
+button {
+  background-color: #f9f9f9;
 }
 
 @theme inline {
@@ -183,4 +195,33 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Forzar estilos de modo claro en componentes UI */
+[data-slot="popover-content"],
+[data-slot="alert-dialog-content"],
+[data-slot="calendar"] {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+/* Forzar modo claro en botones del calendario */
+[data-slot="calendar"] button {
+  color: #374151 !important;
+}
+
+[data-slot="calendar"] button[data-selected-single="true"],
+[data-slot="calendar"] button[data-range-start="true"],
+[data-slot="calendar"] button[data-range-end="true"] {
+  background-color: #1e3a8a !important;
+  color: #ffffff !important;
+}
+
+[data-slot="calendar"] .text-muted-foreground {
+  color: #9ca3af !important;
+}
+
+/* Overlay del diálogo */
+[data-slot="alert-dialog-overlay"] {
+  background-color: rgba(0, 0, 0, 0.5) !important;
 }
